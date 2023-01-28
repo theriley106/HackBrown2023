@@ -47,9 +47,19 @@ class ChatGPTClone():
 
 
 
-    def submit(self):
+    def submit(self, ai_part=True):
         # print(self.last[-1], end=" ")
-        return "AI: " + fetch_openai_response(self.prompt)
+        rr = fetch_openai_response(self.prompt)
+        if ai_part:
+            return "AI: " + rr
+        return rr
+        
+
+    def add_and_submit(self, text):
+        self.add_to_prompt(text)
+        x = self.submit(False)
+        self.prompt += "AI: " + x + "\nStudent: "
+        return x
 
     
 
