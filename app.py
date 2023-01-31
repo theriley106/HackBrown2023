@@ -9,8 +9,8 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-
-app = Flask(__name__, static_url_path='/static/')
+import urllib.parse
+app = Flask(__name__, static_folder='lectures')
 
 # LECTURE_ID = "Random ID assigned to a lecture" this is generated from a file name?
 # and probably a transcript txt file name too
@@ -64,22 +64,41 @@ def create_new_conversation():
     return
 
 import re
+import random
 
 def extract_percentage(string):
     try:
-        x = re.findall("(\d+)%", string)
+        x = re.findall("(\d+)%", string)[0]
         x = int(x)
-    except:
+    except Exception as exp:
+        print(exp)
         x = random.randint(1, 100)
     return int(x)
 
 
-@app.route("/extractRecentPercentage/<conversation_id>", methods=['POST'])
+from moviepy.editor import VideoFileClip
+
+def with_moviepy(filename):
+    clip = VideoFileClip(filename)
+    duration       = clip.duration
+    fps            = clip.fps
+    width, height  = clip.size
+    return duration, fps, (width, height)
+
+import time
+@app.route("/extractRecentPercentage/<conversation_id>", methods=['POST', "GET"])
+@cross_origin()
 def extract_from_percent(conversation_id):
-    prompt = "Where in the lecture was this found? Give me your respose to this question as a percentage of how far into the text this location is."
+    filename = "lectures/" + conversation_id.partition("_")[0] + ".mp4"
+    
+    prompt = "Where in the lecture was this found? Give me your respose to this question as a percentage of how far into the lecture this location is."
     response = ACTIVE_CONVERSATION[conversation_id].add_and_submit(prompt)
+    print(response)
+    xr = int(with_moviepy(filename)[0] * (extract_percentage(response) / 100))
+    print(xr)
+    time.sleep(1)
     return jsonify({
-        'percent': extract_percentage(response)
+        'percent': xr
     })
 
 @app.route('/askQuestion/<conversation_id>', methods=['POST'])
@@ -89,6 +108,12 @@ def ask_question(conversation_id):
     if conversation_id not in ACTIVE_CONVERSATION:
         return jsonify({"message": "conversation does not exist..."})
     
+    return jsonify({"message": ACTIVE_CONVERSATION[conversation_id].add_and_submit(question)})
+
+@app.route('/', methods=['GET'])
+def index():
+    rr = list(set([x.split("/")[-1].partition(".")[0] for x in glob.glob("lectures/*.mp4") if 'temp' not in x]))
+    return render_template("index.html", values=rr)
     return jsonify({"message": ACTIVE_CONVERSATION[conversation_id].add_and_submit(question)})
 
 if __name__ == '__main__':

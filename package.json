@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-player": "^2.11.0",
+    "typewriter-effect": "^2.19.0"
+  }
+}

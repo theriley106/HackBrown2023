@@ -13,6 +13,7 @@ TRANSCRIPT = open("transcript.txt").read()
 def fetch_openai_response(prompt):
     start_sequence = "\nAI:"
     restart_sequence = "\nStudent: "
+    print(prompt)
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
@@ -23,6 +24,7 @@ def fetch_openai_response(prompt):
         presence_penalty=0.6,
         stop=[" Student:", " AI:"]
     )
+    
     return response['choices'][0]['text'].strip()
 
 START_PROMPT = """
@@ -37,7 +39,11 @@ The lecture is as followed:
 class ChatGPTClone():
     def __init__(self, lecture):
         # You probably don't need to feed it any lecture to begin
-        self.prompt = START_PROMPT + "\n" + lecture + "\n"
+        self.prompt = START_PROMPT + "\n" + lecture 
+        self.prompt = " ".join(self.prompt.split(" ")[:4000])
+        
+        self.prompt += "\n"
+
         self.last = []
 
     def add_to_prompt(self, text):
@@ -57,8 +63,21 @@ class ChatGPTClone():
 
     def add_and_submit(self, text):
         self.add_to_prompt(text)
+        temp = self.prompt.split(" ")
+
+        xre = self.prompt.index("followed:")
+        while len(temp) > 3000:
+            try:
+                temp.pop(xre + 1)
+            except:
+                temp.pop(-1)
+        self.prompt = " ".join(temp)
+
         x = self.submit(False)
-        self.prompt += "AI: " + x + "\nStudent: "
+        while len(x) == 0:
+            print("REPEATING FOR SOME REASON??")
+            x = self.submit(False)
+        self.prompt += x + "\nStudent: "
         return x
 
     
